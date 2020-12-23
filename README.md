@@ -2,7 +2,12 @@ scrapy-x (X)
 =============
 > a very simple scrapy subcommand which makes scrapy a very simple distributed high-performance scraping framework
 
-
+Usage
+======
+> let's assume that you have a project called `TestCrawler`
+- cd to `TestCrawler`
+- run `scrapy x`
+- that is all!
 
 Default Settings
 ================
@@ -48,7 +53,7 @@ X_REDIS_DB = 0
 X_REDIS_PASSWORD = ''
 ```
 
-# Available Endpoints
+Available Endpoints
 =====================
 
 **GET /**
