@@ -85,3 +85,8 @@ Technologies Used
 Author
 ======
 > I'm Mohamed, a software engineer who enjoys writing code in his free time, I'm speaking python, php, go, rust and js
+
+My Similar Projects
+==================
+- [scrapyr](https://github.com/alash3al/scrapyr)
+- [scrapyly](https://github.com/alash3al/scraply)
