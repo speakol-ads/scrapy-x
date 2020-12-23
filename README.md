@@ -5,8 +5,8 @@ scrapy-x (X)
 
 Installation
 ============
-```python
-pip install -U scrapy-x
+```bash
+$ pip install -U scrapy-x
 ```
 
 Usage
