@@ -1,0 +1,6 @@
+Scrapy==2.3.0
+uvicorn==0.13.2
+scrapydo==0.2.2
+coloredlogs==15.0
+redis==3.5.3
+fastapi==0.63.0

@@ -71,3 +71,9 @@ Technologies Used
 =================
 - [fastapi](https://fastapi.tiangolo.com/)
 - [redis](https://redis.io)
+- [scrapydo](https://github.com/rmax/scrapydo)
+- [coloredlogs](https://pypi.org/project/coloredlogs/)
+
+Author
+======
+> I'm Mohamed, a software engineer who enjoys writing code in his free time, I'm speaking python, php, go, rust and js

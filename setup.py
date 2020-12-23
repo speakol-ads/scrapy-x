@@ -1,10 +1,18 @@
+import os
+
 from setuptools import find_packages, setup
+
+with os.open('requirements.txt') as f:
+    required = f.read().splitlines()
 
 setup(
     name='scrapy-x',
     packages=find_packages(),
+    install_requires=required,
     version='1.0.0',
     author='Mohamed Al Ashaal',
+    author_email='m7medalash3al@gmail.com',
+    license='Apache License V2.0',
     description='a scrapy subcommand for easily enqueuing crawling jobs in a scalable and high performance way',
     url='https://github.com/alash3al/scrapyx',
     python_requires='>=3.6.9',
@@ -12,5 +20,5 @@ setup(
         'scrapy.commands': [
             'x=scrapyx.x:Command',
         ],
-    },
+    }
 )
