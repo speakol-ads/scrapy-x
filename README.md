@@ -1,6 +1,13 @@
+
 scrapy-x (X)
 =============
 > a very simple scrapy subcommand which makes scrapy a very simple distributed high-performance scraping framework
+
+Installation
+============
+```python
+pip install -U scrapy-x
+```
 
 Usage
 ======
@@ -11,8 +18,9 @@ Usage
 
 Default Settings
 ================
-> it utilizes your default project `settings.py` file
-```python
+> it utilizes your default project `settings.py` file  
+
+```python  
 
 # the default queue name that the system will use
 # actually it will be used as a prefix for its internal
