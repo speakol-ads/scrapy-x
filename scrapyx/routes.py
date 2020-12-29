@@ -1,4 +1,5 @@
 import json
+import socket
 import time
 import uuid
 
@@ -16,7 +17,11 @@ async def index(req: Request):
         'message': 'under your service, sir :)',
         'payload': {
             'spiders': [spider_name for spider_name in req.app.x.spiders],
-            'backlog': req.app.redis.llen(req.app.x.queue_name + '.BACKLOG')
+            'stats': {
+                'backlog': req.app.redis.llen(req.app.x.queue_name + '.BACKLOG'),
+                'running': int(req.app.redis.get(req.app.x.queue_name + '.COUNTER.RUNNING')),
+                'finished': int(req.app.redis.get(req.app.x.queue_name + '.COUNTER.FINISHED'))
+            },
         }
     }
 
@@ -40,6 +45,9 @@ async def run(spider_name: str, req: Request, res: Response):
             args = {**args, **post_data}
     except:
         pass
+
+    args["created_at"] = int(time.time())
+    args["jobid"] = str(uuid.uuid4())
 
     result = utils.crawl(spider, req.app.x.settings, args)
     items = result.items
@@ -100,5 +108,34 @@ async def enqueue(spider_name: str, req: Request, res: Response):
 
     return {
         'success': True,
-        'task': task,
+        'payload': task,
     }
+
+
+@router.get("/daemonstatus.json", description="scrapyd compatible endpoint")
+async def daemonstatus(req: Request):
+    return {
+        "status": "ok",
+        "running": int(req.app.redis.get(req.app.x.queue_name + '.COUNTER.RUNNING')),
+        "pending": req.app.redis.llen(req.app.x.queue_name + '.BACKLOG'),
+        "finished": int(req.app.redis.get(req.app.x.queue_name + '.COUNTER.FINISHED')),
+        "node_name": socket.gethostname(),
+    }
+
+
+@router.get("/schedule.json", description="scrapyd compatible endpoint")
+@router.post("/schedule.json", description="scrapyd compatible endpoint")
+async def schedule(req: Request, res: Response):
+    result = await enqueue(
+        req.query_params.get("spider", None),
+        req,
+        res
+    )
+
+    if result["success"]:
+        return {
+            "status": "ok",
+            "jobid": result["payload"]["args"]["jobid"],
+        }
+
+    return {"status": "no"}

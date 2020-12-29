@@ -32,7 +32,9 @@ class Command(ScrapyCommand):
 
         if len(self.settings.get('SPIDER_MODULES', [])) < 1 or len(self.spiders) < 1:
             self.logger.critical(
-                'there is no need to call me here, I cannot find any project/spider there!')
+                'there is no need to call me here, I cannot find any project/spider there!'
+            )
+
             return
 
         utils.threads(self.queue_workers_count, self.consumer, ())
@@ -44,6 +46,7 @@ class Command(ScrapyCommand):
         self.logger = logging.getLogger("scrapy-x")
 
         scrapydo.setup()
+
         coloredlogs.install(
             fmt="[%(levelname)s] | %(asctime)s |  %(message)s",
             logger=self.logger
@@ -113,7 +116,8 @@ class Command(ScrapyCommand):
             if not isinstance(args, dict):
                 self.logger.warning(
                     "invalid args object, replacing it with empty one {}".format(
-                        args)
+                        args
+                    )
                 )
 
                 args = {}
@@ -122,11 +126,15 @@ class Command(ScrapyCommand):
                 self.logger.error("unknwon spider {}".format(spider_name))
                 continue
 
+            r.incr(self.queue_name + ".COUNTER.RUNNING", amount=1)
+
             try:
                 utils.crawl(spider, self.settings, args)
             except Exception as e:
                 self.logger.critical(e)
-                exit(e)
+
+            r.decr(self.queue_name + ".COUNTER.RUNNING", amount=1)
+            r.incr(self.queue_name + ".COUNTER.FINISHED", amount=1)
 
     def server(self, loop):
         """
@@ -155,7 +163,7 @@ class Command(ScrapyCommand):
             port=self.server_listen_port,
             host=self.server_listen_host,
             access_log=self.enable_access_log,
-            debug=False
+            debug=False,
         )
 
         server = Server(config)
@@ -165,5 +173,5 @@ class Command(ScrapyCommand):
     def short_desc(self):
         return "start the x server and queue manager"
 
-    def run(self, opts, args):
+    def run(self, op_ts, args):
         pass

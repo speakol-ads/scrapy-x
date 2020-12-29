@@ -10,7 +10,7 @@ setup(
     name='scrapy-x',
     packages=find_packages(),
     install_requires=required,
-    version='1.0.2',
+    version='1.1',
     author='Mohamed Al Ashaal',
     author_email='m7medalash3al@gmail.com',
     license='Apache License V2.0',

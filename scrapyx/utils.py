@@ -7,6 +7,7 @@ from typing import Callable
 import scrapy
 import scrapydo
 from fastapi import FastAPI
+from scrapy.crawler import CrawlerProcess
 from scrapy.settings import Settings
 from uvicorn import Config, Server
 
