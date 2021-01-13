@@ -88,6 +88,20 @@ class Command(ScrapyCommand):
 
         self.spiders = utils.discover_spiders(self.settings)
 
+        self.redis_conn = redis.Redis(
+            host=self.redis_config["host"],
+            port=self.redis_config["port"],
+            password=self.redis_config["password"],
+            db=self.redis_config["db"]
+        )
+
+        self.queue_backlog_name = self.queue_name + '.BACKLOG'
+        self.queue_running_counter_name = self.queue_name + '.COUNTER.RUNNING'
+        self.queue_finished_counter_name = self.queue_name + '.COUNTER.FINISHED'
+
+        self.redis_conn.set(self.queue_running_counter_name, 0)
+        self.redis_conn.set(self.queue_finished_counter_name, 0)
+
     def consumer(self):
         """
         start a single redis consumer worker
@@ -151,12 +165,6 @@ class Command(ScrapyCommand):
 
         app = FastAPI()
         app.x = self
-        app.redis = redis.Redis(
-            host=self.redis_config["host"],
-            port=self.redis_config["port"],
-            password=self.redis_config["password"],
-            db=self.redis_config["db"]
-        )
 
         app.include_router(routes.router)
 

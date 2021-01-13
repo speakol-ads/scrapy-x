@@ -18,9 +18,9 @@ async def index(req: Request):
         'payload': {
             'spiders': [spider_name for spider_name in req.app.x.spiders],
             'stats': {
-                'backlog': req.app.redis.llen(req.app.x.queue_name + '.BACKLOG'),
-                'running': int(req.app.redis.get(req.app.x.queue_name + '.COUNTER.RUNNING')),
-                'finished': int(req.app.redis.get(req.app.x.queue_name + '.COUNTER.FINISHED'))
+                'backlog': req.app.x.redis_conn.llen(req.app.x.queue_backlog_name),
+                'running': int(req.app.x.redis_conn.get(req.app.x.queue_running_counter_name)),
+                'finished': int(req.app.x.redis_conn.get(req.app.x.queue_finished_counter_name))
             },
         }
     }
@@ -101,7 +101,7 @@ async def enqueue(spider_name: str, req: Request, res: Response):
         'args': args,
     }
 
-    req.app.redis.rpush(
+    req.app.x.redis_conn.rpush(
         req.app.x.queue_name + ".BACKLOG",
         json.dumps(task)
     )
@@ -116,9 +116,9 @@ async def enqueue(spider_name: str, req: Request, res: Response):
 async def daemonstatus(req: Request):
     return {
         "status": "ok",
-        "running": int(req.app.redis.get(req.app.x.queue_name + '.COUNTER.RUNNING')),
-        "pending": req.app.redis.llen(req.app.x.queue_name + '.BACKLOG'),
-        "finished": int(req.app.redis.get(req.app.x.queue_name + '.COUNTER.FINISHED')),
+        "running": int(req.app.x.redis_conn.get(req.app.x.queue_running_counter_name)),
+        "pending": req.app.x.redis_conn.llen(req.app.x.queue_name + '.BACKLOG'),
+        "finished": int(req.app.x.redis_conn.get(req.app.x.queue_finished_counter_name)),
         "node_name": socket.gethostname(),
     }
 
