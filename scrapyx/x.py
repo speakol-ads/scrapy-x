@@ -97,10 +97,8 @@ class Command(ScrapyCommand):
         )
 
         self.queue_backlog_name = self.queue_name + '.BACKLOG'
-        self.queue_running_counter_name = self.queue_name + '.COUNTER.RUNNING'
         self.queue_finished_counter_name = self.queue_name + '.COUNTER.FINISHED'
 
-        self.redis_conn.set(self.queue_running_counter_name, 0)
         self.redis_conn.set(self.queue_finished_counter_name, 0)
 
     def consumer(self):
@@ -145,8 +143,6 @@ class Command(ScrapyCommand):
                 self.logger.error("unknwon spider {}".format(spider_name))
                 continue
 
-            r.incr(self.queue_running_counter_name, amount=1)
-
             try:
                 utils.crawl(spider, self.settings, args)
             except Exception as e:
@@ -154,7 +150,6 @@ class Command(ScrapyCommand):
                     self.logger.critical(
                         "exception from scrapy {}".format(str(e)))
 
-            r.decr(self.queue_running_counter_name, amount=1)
             r.incr(self.queue_finished_counter_name, amount=1)
 
     def server(self, loop):
