@@ -38,6 +38,7 @@ class Command(ScrapyCommand):
             return
 
         utils.threads(self.queue_workers_count, self.consumer, ())
+
         loop = asyncio.get_event_loop()
 
         self.server(loop)
@@ -53,6 +54,9 @@ class Command(ScrapyCommand):
         )
 
         self.settings = get_project_settings()
+
+        self.debug = self.settings.getbool('X_DEBUG', False)
+
         self.queue_name = self.settings.get('X_QUEUE_NAME', 'SCRAPY_X_QUEUE')
 
         self.queue_workers_count = self.settings.getint(
@@ -163,7 +167,7 @@ class Command(ScrapyCommand):
             port=self.server_listen_port,
             host=self.server_listen_host,
             access_log=self.enable_access_log,
-            debug=False,
+            debug=self.debug,
         )
 
         server = Server(config)

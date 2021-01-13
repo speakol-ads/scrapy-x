@@ -22,6 +22,9 @@ Default Settings
 
 ```python  
 
+# whether to enable debug mode or not
+X_DEBUG = True
+
 # the default queue name that the system will use
 # actually it will be used as a prefix for its internal
 # queues, currently there is only one queue called `X_QUEUE_NAME + '.BACKLOG'`

@@ -52,7 +52,7 @@ def discover_spiders(settings: Settings) -> dict:
                     spiders_module + '.' + mod_name
                 )
                 for _, v in inspect.getmembers(mod, is_spider):
-                    spiders[mod_name] = v
+                    spiders[v.name] = v
 
     return spiders
 
