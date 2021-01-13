@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import sys
+import traceback
 
 import coloredlogs
 import redis
@@ -144,15 +145,17 @@ class Command(ScrapyCommand):
                 self.logger.error("unknwon spider {}".format(spider_name))
                 continue
 
-            r.incr(self.queue_name + ".COUNTER.RUNNING", amount=1)
+            r.incr(self.queue_running_counter_name, amount=1)
 
             try:
                 utils.crawl(spider, self.settings, args)
             except Exception as e:
-                self.logger.critical(e)
+                if str(e).strip():
+                    self.logger.critical(
+                        "exception from scrapy {}".format(str(e)))
 
-            r.decr(self.queue_name + ".COUNTER.RUNNING", amount=1)
-            r.incr(self.queue_name + ".COUNTER.FINISHED", amount=1)
+            r.decr(self.queue_running_counter_name, amount=1)
+            r.incr(self.queue_finished_counter_name, amount=1)
 
     def server(self, loop):
         """
