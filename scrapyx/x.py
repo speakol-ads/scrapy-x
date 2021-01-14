@@ -99,8 +99,6 @@ class Command(ScrapyCommand):
         self.queue_backlog_name = self.queue_name + '.BACKLOG'
         self.queue_finished_counter_name = self.queue_name + '.COUNTER.FINISHED'
 
-        self.redis_conn.set(self.queue_finished_counter_name, 0)
-
     def consumer(self):
         """
         start a single redis consumer worker
