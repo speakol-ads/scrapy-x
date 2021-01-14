@@ -101,7 +101,7 @@ async def enqueue(spider_name: str, req: Request, res: Response):
     }
 
     req.app.x.redis_conn.rpush(
-        req.app.x.queue_name + ".BACKLOG",
+        req.app.x.queue_backlog_name,
         json.dumps(task)
     )
 
