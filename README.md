@@ -66,6 +66,7 @@ X_REDIS_PASSWORD = ''
 
 Available Endpoints
 =====================
+> as well scrapyd core endpoints like (`schedule.json`, `daemonstatus.json`), you have the following too:
 
 **GET /**
 > returns some info about the engine like the available spiders and backlog queue length
