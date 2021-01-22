@@ -98,6 +98,7 @@ class Command(ScrapyCommand):
 
         self.queue_backlog_name = self.queue_name + '.BACKLOG'
         self.queue_finished_counter_name = self.queue_name + '.COUNTER.FINISHED'
+        self.queue_consumers_rpm = self.queue_name + '.RPM'
 
     def consumer(self):
         """
@@ -149,7 +150,13 @@ class Command(ScrapyCommand):
                         self.logger.critical(
                             "exception from scrapy {}".format(str(e)))
 
+                # increment the finish queue
                 r.incr(self.queue_finished_counter_name, amount=1)
+
+                # increment our RPM stat (which expires after 60 seconds)
+                if r.incr(self.queue_consumers_rpm, amount=1) == 1:
+                    r.expire(self.queue_consumers_rpm, 60)
+
         except Exception as e:
             self.logger.critical(
                 """ QueueWorkerExit due to the following error ({}), and here is the details:

@@ -19,7 +19,8 @@ async def index(req: Request):
             'spiders': [spider_name for spider_name in req.app.x.spiders],
             'stats': {
                 'backlog': req.app.x.redis_conn.llen(req.app.x.queue_backlog_name),
-                'finished': int(req.app.x.redis_conn.get(req.app.x.queue_finished_counter_name))
+                'finished': int(req.app.x.redis_conn.get(req.app.x.queue_finished_counter_name) or 0),
+                'rpm': int(req.app.x.redis_conn.get(req.app.x.queue_consumers_rpm) or 0)
             },
         }
     }
@@ -116,7 +117,8 @@ async def daemonstatus(req: Request):
     return {
         "status": "ok",
         "pending": req.app.x.redis_conn.llen(req.app.x.queue_name + '.BACKLOG'),
-        "finished": int(req.app.x.redis_conn.get(req.app.x.queue_finished_counter_name)),
+        "finished": int(req.app.x.redis_conn.get(req.app.x.queue_finished_counter_name) or 0),
+        "rpm": int(req.app.x.redis_conn.get(req.app.x.queue_consumers_rpm) or 0),
         "node_name": socket.gethostname(),
     }
 
@@ -136,4 +138,4 @@ async def schedule(req: Request, res: Response):
             "jobid": result["payload"]["args"]["jobid"],
         }
 
-    return {"status": "no"}
+    return {"status": "error"}
