@@ -1,8 +1,7 @@
 Overview
 ========
-
-ScrapyX is a subcommand for scrapy enables you to easily convert your scrapy project to a simple, 
-distributed and high-performance crawling platform, for more info go there: https://github.com/alash3al/scrapy-x
+A distributed, scalable and lightweight environment for deploying and running scrapy spiders/projects with no-hassle on commodity hardware, also it is compatible with scrapyd `/schedule.json` and `/daemonstatus.json`
+ , for more info go there: https://github.com/alash3al/scrapy-x
 
 Install
 =======

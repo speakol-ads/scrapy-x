@@ -1,7 +1,7 @@
 
 scrapy-x (X)
 =============
-> a very simple scrapy subcommand which makes scrapy a very simple distributed high-performance scraping framework
+> a distributed, scalable and lightweight environment for deploying and running scrapy spiders/projects with no-hassle on commodity hardware, also it is compatible with scrapyd `/schedule.json` and `/daemonstatus.json`.
 
 Installation
 ============
