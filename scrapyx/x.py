@@ -105,50 +105,59 @@ class Command(ScrapyCommand):
         """
 
         try:
-            r = redis.Redis(
-                host=self.redis_config["host"],
-                port=self.redis_config["port"],
-                password=self.redis_config["password"],
-                db=self.redis_config["db"]
-            )
-        except Exception as e:
-            self.logger.critical("[redis] {}".format(str(e)))
-            exit(e)
-
-        while True:
-            _, payload = r.blpop(self.queue_name + ".BACKLOG")
-
             try:
-                task = json.loads(payload)
-            except Exception as e:
-                self.logger.error("invalid task payload {}".format(str(e)))
-                continue
-
-            spider_name = task.get("spider", None)
-            spider = self.spiders.get(spider_name, None)
-            args = task.get("args", {})
-
-            if not isinstance(args, dict):
-                self.logger.warning(
-                    "invalid args object, replacing it with empty one {}".format(
-                        args
-                    )
+                r = redis.Redis(
+                    host=self.redis_config["host"],
+                    port=self.redis_config["port"],
+                    password=self.redis_config["password"],
+                    db=self.redis_config["db"]
                 )
-
-                args = {}
-
-            if not spider:
-                self.logger.error("unknwon spider {}".format(spider_name))
-                continue
-
-            try:
-                utils.crawl(spider, self.settings, args)
             except Exception as e:
-                if str(e).strip():
-                    self.logger.critical(
-                        "exception from scrapy {}".format(str(e)))
+                self.logger.critical("[redis] {}".format(str(e)))
+                exit(e)
 
-            r.incr(self.queue_finished_counter_name, amount=1)
+            while True:
+                _, payload = r.blpop(self.queue_name + ".BACKLOG")
+
+                try:
+                    task = json.loads(payload)
+                except Exception as e:
+                    self.logger.error("invalid task payload {}".format(str(e)))
+                    continue
+
+                spider_name = task.get("spider", None)
+                spider = self.spiders.get(spider_name, None)
+                args = task.get("args", {})
+
+                if not isinstance(args, dict):
+                    self.logger.warning(
+                        "invalid args object, replacing it with empty one {}".format(
+                            args
+                        )
+                    )
+
+                    args = {}
+
+                if not spider:
+                    self.logger.error("unknwon spider {}".format(spider_name))
+                    continue
+
+                try:
+                    utils.crawl(spider, self.settings, args)
+                except Exception as e:
+                    if str(e).strip():
+                        self.logger.critical(
+                            "exception from scrapy {}".format(str(e)))
+
+                r.incr(self.queue_finished_counter_name, amount=1)
+        except Exception as e:
+            self.logger.critical(
+                """ QueueWorkerExit due to the following error ({}), and here is the details:
+                ------------
+                    {}
+                ------------
+                """.format(str(e), traceback.format_exc()))
+            os._exit(-1)
 
     def server(self, loop):
         """
