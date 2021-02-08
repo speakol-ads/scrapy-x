@@ -139,3 +139,54 @@ async def schedule(req: Request, res: Response):
         }
 
     return {"status": "error"}
+
+
+@router.post('/batch/enqueue/{spider_name}', description="adding the specified spider in `{spider_name}` to the backlog to be executed later on multiple items, P.S: any query param and json post data will be used as spider argument")
+async def batch_enqueue(spider_name: str, req: Request, res: Response):
+    spider = req.app.x.spiders.get(spider_name, None)
+
+    if not spider:
+        res.status_code = 404
+        return {
+            'success': False,
+            'error': 'invalid spider specified'
+        }
+
+    try:
+        post_data = list(await req.json())
+        if not isinstance(post_data, list):
+            res.status_code = 400
+            return {
+                'success': False,
+                'error': 'invalid post data spcified, it should be a list'
+            }
+    except Exception as e:
+        res.status_code = 500
+        return {
+            'success': False,
+            'error': str(e)
+        }
+
+    tasks = []
+
+    for item in post_data:
+        args = item
+        args["created_at"] = int(time.time())
+        args["jobid"] = str(uuid.uuid4())
+
+        task = {
+            'spider': spider_name,
+            'args': args,
+        }
+
+        req.app.x.redis_conn.rpush(
+            req.app.x.queue_backlog_name,
+            json.dumps(task)
+        )
+
+        tasks.append(task)
+
+    return {
+        'success': True,
+        'payload': tasks,
+    }
