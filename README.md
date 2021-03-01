@@ -93,6 +93,6 @@ Author
 My Similar Projects
 ==================
 - [scrapyr](https://github.com/alash3al/scrapyr)
-- [scrapyly](https://github.com/alash3al/scraply)
+- [scraply](https://github.com/alash3al/scraply)
 
 **P.S**: star the project if you liked it ^_^
