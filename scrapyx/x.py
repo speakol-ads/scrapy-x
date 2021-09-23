@@ -18,7 +18,7 @@ from . import routes, utils
 
 class Command(ScrapyCommand):
     requires_project = True
-    default_settings = {'LOG_ENABLED': False}
+    version = 1.10
 
     def __init__(self):
         command_name = os.path.basename(__file__).split('.')[0]
@@ -201,7 +201,7 @@ class Command(ScrapyCommand):
         loop.run_until_complete(server.serve())
 
     def short_desc(self):
-        return "start the x server and queue manager"
+        return "start the x server and queue manager - v {}".format(self.version)
 
     def run(self, op_ts, args):
         pass
