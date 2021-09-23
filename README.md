@@ -6,7 +6,7 @@ scrapy-x (X)
 Installation
 ============
 ```bash
-$ pip install -U git+git://github.com/alash3al/scrapy-x.git
+$ pip install -U git+git://github.com/speakol-ads/scrapy-x.git
 ```
 
 Usage
