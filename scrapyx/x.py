@@ -18,7 +18,7 @@ from . import routes, utils
 
 class Command(ScrapyCommand):
     requires_project = True
-    version = 1.10
+    version = "1.10"
 
     def __init__(self):
         command_name = os.path.basename(__file__).split('.')[0]
