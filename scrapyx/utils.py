@@ -63,7 +63,8 @@ def crawl(spider: scrapy.Spider, settings: scrapy.settings.Settings, args: dict)
         settings=settings,
         return_crawler=True,
         capture_items=True,
-        **args
+        timeout=settings.getFloat('X_TASK_TIMEOUT', 25),
+        ** args
     )
 
     return crawler
