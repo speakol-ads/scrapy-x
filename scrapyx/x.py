@@ -105,6 +105,8 @@ class Command(ScrapyCommand):
         start a single redis consumer worker
         """
 
+        self.logger.info("a new consumer (thread) has been started")
+
         try:
             try:
                 r = redis.Redis(
@@ -130,6 +132,8 @@ class Command(ScrapyCommand):
                     self.logger.critical(
                         "invalid task payload {}".format(str(e)))
                     continue
+
+                self.logger.info("> working on {}", payload)
 
                 spider_name = task.get("spider", None)
                 spider = self.spiders.get(spider_name, None)
