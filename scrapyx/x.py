@@ -106,7 +106,6 @@ class Command(ScrapyCommand):
         """
 
         self.logger.info("a new consumer (thread) has been started")
-        print("a new consumer (thread) has been started")
 
         try:
             try:
