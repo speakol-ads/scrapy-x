@@ -115,15 +115,20 @@ class Command(ScrapyCommand):
                 )
             except Exception as e:
                 self.logger.critical("[redis] {}".format(str(e)))
-                exit(e)
+                os._exit(-1)
 
             while True:
-                _, payload = r.blpop(self.queue_name + ".BACKLOG")
+                try:
+                    _, payload = r.blpop(self.queue_name + ".BACKLOG")
+                except Exception as e:
+                    self.logger.critical("queue error {}".format(str(e)))
+                    os._exit(-1)
 
                 try:
                     task = json.loads(payload)
                 except Exception as e:
-                    self.logger.error("invalid task payload {}".format(str(e)))
+                    self.logger.critical(
+                        "invalid task payload {}".format(str(e)))
                     continue
 
                 spider_name = task.get("spider", None)
@@ -140,7 +145,8 @@ class Command(ScrapyCommand):
                     args = {}
 
                 if not spider:
-                    self.logger.error("unknwon spider {}".format(spider_name))
+                    self.logger.critical(
+                        "unknwon spider {}".format(spider_name))
                     continue
 
                 try:
