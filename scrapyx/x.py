@@ -18,7 +18,7 @@ from . import routes, utils
 
 class Command(ScrapyCommand):
     requires_project = True
-    version = "1.10"
+    version = "1.11"
 
     def __init__(self):
         command_name = os.path.basename(__file__).split('.')[0]
@@ -106,6 +106,7 @@ class Command(ScrapyCommand):
         """
 
         self.logger.info("a new consumer (thread) has been started")
+        print("a new consumer (thread) has been started")
 
         try:
             try:
