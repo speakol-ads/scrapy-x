@@ -133,7 +133,7 @@ class Command(ScrapyCommand):
                         "invalid task payload {}".format(str(e)))
                     continue
 
-                self.logger.info("working on a new job {}", str(payload))
+                self.logger.info("working on a new job ...")
 
                 spider_name = task.get("spider", None)
                 spider = self.spiders.get(spider_name, None)
