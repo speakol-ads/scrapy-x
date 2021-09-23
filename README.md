@@ -62,6 +62,10 @@ X_REDIS_DB = 0
 
 # redis password
 X_REDIS_PASSWORD = ''
+
+# the maximum allowed wait time for a running task
+# it will be killed after that time.
+X_TASK_TIMEOUT = 25
 ```
 
 Available Endpoints
