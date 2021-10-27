@@ -3,6 +3,13 @@ scrapy-x (X)
 =============
 > a distributed, scalable and lightweight environment for deploying and running scrapy spiders/projects with no-hassle on commodity hardware, also it is compatible with scrapyd `/schedule.json` and `/daemonstatus.json`.
 
+Changelog
+==========
+#### 2021-10-27
+- moved from redis lists to redis zsets.
+- set default priority to 1
+- highest priority means should be proceed ASAP.
+
 Installation
 ============
 ```bash
@@ -27,7 +34,7 @@ X_DEBUG = True
 
 # the default queue name that the system will use
 # actually it will be used as a prefix for its internal
-# queues, currently there is only one queue called `X_QUEUE_NAME + '.BACKLOG'`
+# queues, currently there is only one queue called `X_QUEUE_NAME + '.BACKLOG.PRIORITY'`
 # which holds all jobs that should be crawled.
 X_QUEUE_NAME = 'SCRAPY_X_QUEUE'
 
@@ -66,6 +73,12 @@ X_REDIS_PASSWORD = ''
 # the maximum allowed wait time for a running task
 # it will be killed after that time.
 X_TASK_TIMEOUT = 25
+
+# the interval in seconds (accepts float) to poll from the queue
+X_POLL_INTERVAL = 0.5
+
+# when there is no priority specified this will be used
+X_DEFAULT_PRIORITY = 1
 ```
 
 Available Endpoints

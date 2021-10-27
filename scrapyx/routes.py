@@ -49,28 +49,35 @@ async def run(spider_name: str, req: Request, res: Response):
     args["created_at"] = int(time.time())
     args["jobid"] = str(uuid.uuid4())
 
-    result = utils.crawl(spider, req.app.x.settings, args)
-    items = result.items
-    stats = result.stats.get_stats()
+    try:
+        result = utils.crawl(spider, req.app.x.settings, args)
+        items = result.items
+        stats = result.stats.get_stats()
 
-    if stats.get('spider_exceptions/Exception', 0) > 0 and len(items) < 1:
+        if stats.get('spider_exceptions/Exception', 0) > 0 and len(items) < 1:
+            res.status_code = 500
+            return {
+                'success': False,
+                'error': 'something went wrong, there may be an exception in your spider request',
+                'payload': {
+                    'stats': stats,
+                    'items': json.dumps(items),
+                }
+            }
+
+        return {
+            'success': True,
+            'payload': {
+                'items': json.dumps(items),
+                'stats': stats,
+            }
+        }
+    except Exception as e:
         res.status_code = 500
         return {
             'success': False,
-            'error': 'something went wrong, there may be an exception in your spider request',
-            'payload': {
-                'stats': stats,
-                'items': items,
-            }
+            'error': str(e)
         }
-
-    return {
-        'success': True,
-        'payload': {
-            'items': items,
-            'stats': stats,
-        }
-    }
 
 
 @router.get('/enqueue/{spider_name}', description="adding the specified spider in `{spider_name}` to the backlog to be executed later, P.S: any query param will be used as spider argument")
@@ -96,13 +103,19 @@ async def enqueue(spider_name: str, req: Request, res: Response):
     args["created_at"] = int(time.time())
     args["jobid"] = str(uuid.uuid4())
 
+    if "priority" not in args:
+        args["priority"] = req.app.x.default_priority
+
+    args["priority"] = int(args["priority"])
+
     task = {
         'spider': spider_name,
-        'args': args,
+        'args': args
     }
 
-    req.app.x.redis_conn.rpush(
+    req.app.x.redis_conn.zincrby(
         req.app.x.queue_backlog_name,
+        args["priority"],
         json.dumps(task)
     )
 
@@ -116,7 +129,7 @@ async def enqueue(spider_name: str, req: Request, res: Response):
 async def daemonstatus(req: Request):
     return {
         "status": "ok",
-        "pending": req.app.x.redis_conn.llen(req.app.x.queue_name + '.BACKLOG'),
+        "pending": req.app.x.redis_conn.llen(req.app.x.queue_backlog_name),
         "finished": int(req.app.x.redis_conn.get(req.app.x.queue_finished_counter_name) or 0),
         "rpm": int(req.app.x.redis_conn.get(req.app.x.queue_consumers_rpm) or 0),
         "node_name": socket.gethostname(),
@@ -174,13 +187,19 @@ async def batch_enqueue(spider_name: str, req: Request, res: Response):
         args["created_at"] = int(time.time())
         args["jobid"] = str(uuid.uuid4())
 
+        if "priority" not in args:
+            args["priority"] = req.app.x.default_priority
+
+        args["priority"] = int(args["priority"])
+
         task = {
             'spider': spider_name,
             'args': args,
         }
 
-        req.app.x.redis_conn.rpush(
+        req.app.x.redis_conn.zincrby(
             req.app.x.queue_backlog_name,
+            args["priority"],
             json.dumps(task)
         )
 

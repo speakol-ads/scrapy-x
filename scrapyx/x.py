@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 import traceback
+from time import sleep
 
 import coloredlogs
 import redis
@@ -18,7 +19,7 @@ from . import routes, utils
 
 class Command(ScrapyCommand):
     requires_project = True
-    version = "1.11"
+    version = "2.0.1"
 
     def __init__(self):
         command_name = os.path.basename(__file__).split('.')[0]
@@ -30,6 +31,8 @@ class Command(ScrapyCommand):
             return
 
         self.boot()
+
+        self.logger.info("you're using version {}".format(self.version))
 
         if len(self.settings.get('SPIDER_MODULES', [])) < 1 or len(self.spiders) < 1:
             self.logger.critical(
@@ -80,6 +83,14 @@ class Command(ScrapyCommand):
             'X_ENABLE_ACCESS_LOG', True
         )
 
+        self.poll_interval = self.settings.getfloat(
+            'X_POLL_INTERVAL', 0.5
+        )
+
+        self.default_priority = self.settings.getint(
+            'X_DEFAULT_PRIORITY', 1
+        )
+
         self.redis_config = {
             'host': self.settings.get('X_REDIS_HOST', 'localhost'),
             'port': self.settings.getint('X_REDIS_PORT', 6379),
@@ -96,7 +107,7 @@ class Command(ScrapyCommand):
             db=self.redis_config["db"]
         )
 
-        self.queue_backlog_name = self.queue_name + '.BACKLOG'
+        self.queue_backlog_name = self.queue_name + '.BACKLOG.PRIORITY'
         self.queue_finished_counter_name = self.queue_name + '.COUNTER.FINISHED'
         self.queue_consumers_rpm = self.queue_name + '.RPM'
 
@@ -120,8 +131,17 @@ class Command(ScrapyCommand):
                 os._exit(-1)
 
             while True:
+                # we do a lot of continue in the loop block so we need to
+                # sleep at the begining to not to skip the sleep.
+                sleep(self.poll_interval)
+
                 try:
-                    _, payload = r.blpop(self.queue_name + ".BACKLOG")
+                    lowest_items = r.zpopmax(self.queue_backlog_name, 1)
+
+                    if len(lowest_items) < 1:
+                        continue
+
+                    payload, _ = lowest_items
                 except Exception as e:
                     self.logger.critical("queue error {}".format(str(e)))
                     os._exit(-1)
