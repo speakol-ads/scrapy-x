@@ -12,11 +12,11 @@ from scrapy.settings import Settings
 from uvicorn import Config, Server
 
 
-def thread(fn: Callable, params: set) -> threading.Thread:
+def thread(fn: Callable, *args) -> threading.Thread:
     t = threading.Thread(
         target=fn,
         daemon=True,
-        args=params,
+        args=args,
     )
 
     t.start()
@@ -24,11 +24,11 @@ def thread(fn: Callable, params: set) -> threading.Thread:
     return t
 
 
-def threads(count: int, fn: Callable, params: set) -> list:
+def threads(count: int, fn: Callable, *args) -> list:
     threads = []
 
     for _ in range(count):
-        threads.append(thread(fn, params))
+        threads.append(thread(fn, *args))
 
     return threads
 
