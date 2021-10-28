@@ -18,7 +18,7 @@ from . import routes, utils
 
 class Command(ScrapyCommand):
     requires_project = True
-    version = "1.11"
+    version = "3.0"
 
     def __init__(self):
         command_name = os.path.basename(__file__).split('.')[0]
@@ -38,7 +38,8 @@ class Command(ScrapyCommand):
 
             return
 
-        utils.threads(self.queue_workers_count, self.consumer, ())
+        for queue_name_suffix, workers_count in self.queue_workers_count.items():
+            utils.threads(workers_count, self.consumer, queue_name_suffix)
 
         loop = asyncio.get_event_loop()
 
@@ -60,8 +61,8 @@ class Command(ScrapyCommand):
 
         self.queue_name = self.settings.get('X_QUEUE_NAME', 'SCRAPY_X_QUEUE')
 
-        self.queue_workers_count = self.settings.getint(
-            'X_QUEUE_WORKERS_COUNT', os.cpu_count()
+        self.queue_workers_count = self.settings.getdict(
+            'X_QUEUE_WORKERS_COUNT', {'default': os.cpu_count()}
         )
 
         self.server_workers_count = self.settings.getint(
@@ -96,16 +97,29 @@ class Command(ScrapyCommand):
             db=self.redis_config["db"]
         )
 
-        self.queue_backlog_name = self.queue_name + '.BACKLOG'
-        self.queue_finished_counter_name = self.queue_name + '.COUNTER.FINISHED'
-        self.queue_consumers_rpm = self.queue_name + '.RPM'
+        self.queue_backlog_names = {}
+        self.queue_finished_counter_names = {}
+        self.queue_consumers_rpm_names = {}
 
-    def consumer(self):
+        for queue_name_suffix in self.queue_workers_count.keys():
+            backlog_full_name = self.queue_name + '.' + queue_name_suffix + '.BACKLOG'
+            counter_full_name = self.queue_name + '.' + queue_name_suffix + '.C.FINISHED.'
+            rpm_full_name = self.queue_name + '.' + queue_name_suffix + '.C.RPM.'
+
+            self.queue_backlog_names[queue_name_suffix] = backlog_full_name
+            self.queue_finished_counter_names[queue_name_suffix] = counter_full_name
+            self.queue_consumers_rpm_names[queue_name_suffix] = rpm_full_name
+
+    def consumer(self, queue_name_suffix):
         """
         start a single redis consumer worker
         """
 
-        self.logger.info("a new consumer (thread) has been started")
+        self.logger.info(
+            "a new consumer (thread) has been started for queue {}".format(
+                queue_name_suffix
+            )
+        )
 
         try:
             try:
@@ -121,7 +135,8 @@ class Command(ScrapyCommand):
 
             while True:
                 try:
-                    _, payload = r.blpop(self.queue_name + ".BACKLOG")
+                    _, payload = r.blpop(
+                        self.queue_backlog_names[queue_name_suffix])
                 except Exception as e:
                     self.logger.critical("queue error {}".format(str(e)))
                     os._exit(-1)
@@ -134,7 +149,7 @@ class Command(ScrapyCommand):
                     continue
 
                 self.logger.info(
-                    "detected new jon and started working on it ...")
+                    "detected new job and started working on it ...")
 
                 spider_name = task.get("spider", None)
                 spider = self.spiders.get(spider_name, None)
@@ -162,19 +177,26 @@ class Command(ScrapyCommand):
                             "exception from scrapy {}".format(str(e)))
 
                 # increment the finish queue
-                r.incr(self.queue_finished_counter_name, amount=1)
+                r.incr(
+                    self.queue_finished_counter_names[queue_name_suffix],
+                    amount=1
+                )
 
                 # increment our RPM stat (which expires after 60 seconds)
-                if r.incr(self.queue_consumers_rpm, amount=1) == 1:
-                    r.expire(self.queue_consumers_rpm, 60)
+                if r.incr(self.queue_consumers_rpm_names[queue_name_suffix], amount=1) == 1:
+                    r.expire(
+                        self.queue_consumers_rpm_names[queue_name_suffix],
+                        60
+                    )
 
         except Exception as e:
             self.logger.critical(
-                """ QueueWorkerExit due to the following error ({}), and here is the details:
+                """ QueueWorkerExit({}) due to the following error ({}), and here is the details:
                 ------------
                     {}
                 ------------
-                """.format(str(e), traceback.format_exc()))
+                """.format(queue_name_suffix, str(e), traceback.format_exc())
+            )
             os._exit(-1)
 
     def server(self, loop):
@@ -209,4 +231,7 @@ class Command(ScrapyCommand):
         return "start the x server and queue manager - v {}".format(self.version)
 
     def run(self, op_ts, args):
+        """
+        we don't want to be executed inside scrapy event loop because we have our own!
+        """
         pass

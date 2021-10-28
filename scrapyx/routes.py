@@ -1,8 +1,10 @@
 import json
+import queue
 import socket
 import time
 import uuid
 
+import joblib
 from fastapi import APIRouter, Request, Response
 
 from . import utils
@@ -12,18 +14,7 @@ router = APIRouter()
 
 @router.get('/', description="returns some information about the engine such as the available spiders and the queue backlog count")
 async def index(req: Request):
-    return {
-        'success': True,
-        'message': 'under your service, sir :)',
-        'payload': {
-            'spiders': [spider_name for spider_name in req.app.x.spiders],
-            'stats': {
-                'backlog': req.app.x.redis_conn.llen(req.app.x.queue_backlog_name),
-                'finished': int(req.app.x.redis_conn.get(req.app.x.queue_finished_counter_name) or 0),
-                'rpm': int(req.app.x.redis_conn.get(req.app.x.queue_consumers_rpm) or 0)
-            },
-        }
-    }
+    return await daemonstatus(req)
 
 
 @router.get('/run/{spider_name}', description="execute the specified spider in `{spider_name}` and wait for it to return its result, P.S: any query param will be passed to the spider as argument `-a key=value`")
@@ -39,12 +30,17 @@ async def run(spider_name: str, req: Request, res: Response):
             'error': 'no valid spider specified'
         }
 
-    try:
-        post_data = await req.json()
-        if isinstance(post_data, dict):
-            args = {**args, **post_data}
-    except:
-        pass
+    if req.method.lower() == 'post':
+        try:
+            post_data = await req.json()
+            if isinstance(post_data, dict):
+                args = {**args, **post_data}
+        except Exception as e:
+            res.status_code = 400
+            return {
+                'success': False,
+                'error': str(e)
+            }
 
     args["created_at"] = int(time.time())
     args["jobid"] = str(uuid.uuid4())
@@ -59,7 +55,7 @@ async def run(spider_name: str, req: Request, res: Response):
             'success': False,
             'error': 'something went wrong, there may be an exception in your spider request',
             'payload': {
-                'stats': stats,
+                'jobid': args['jobid'],
                 'items': items,
             }
         }
@@ -67,8 +63,8 @@ async def run(spider_name: str, req: Request, res: Response):
     return {
         'success': True,
         'payload': {
+            'jobid': args['jobid'],
             'items': items,
-            'stats': stats,
         }
     }
 
@@ -86,12 +82,17 @@ async def enqueue(spider_name: str, req: Request, res: Response):
             'error': 'invalid spider specified'
         }
 
-    try:
-        post_data = await req.json()
-        if isinstance(post_data, dict):
-            args = {**args, **post_data}
-    except:
-        pass
+    if req.method.lower() == 'post':
+        try:
+            post_data = await req.json()
+            if isinstance(post_data, dict):
+                args = {**args, **post_data}
+        except Exception as e:
+            res.status_code = 400
+            return {
+                'success': False,
+                'error': str(e)
+            }
 
     args["created_at"] = int(time.time())
     args["jobid"] = str(uuid.uuid4())
@@ -102,7 +103,7 @@ async def enqueue(spider_name: str, req: Request, res: Response):
     }
 
     req.app.x.redis_conn.rpush(
-        req.app.x.queue_backlog_name,
+        req.app.x.queue_backlog_names[spider_name],
         json.dumps(task)
     )
 
@@ -114,11 +115,29 @@ async def enqueue(spider_name: str, req: Request, res: Response):
 
 @router.get("/daemonstatus.json", description="scrapyd compatible endpoint")
 async def daemonstatus(req: Request):
+    pending = {}
+    finished = {}
+    rpm = {}
+
+    for queue_name, full_name in req.app.x.queue_backlog_names.items():
+        pending[queue_name] = req.app.x.redis_conn.llen(full_name)
+
+    for queue_name, full_name in req.app.x.queue_finished_counter_names.items():
+        finished[queue_name] = int(req.app.x.redis_conn.get(full_name) or 0)
+
+    for queue_name, full_name in req.app.x.queue_consumers_rpm_names.items():
+        rpm[queue_name] = int(req.app.x.redis_conn.get(full_name) or 0)
+
     return {
         "status": "ok",
-        "pending": req.app.x.redis_conn.llen(req.app.x.queue_name + '.BACKLOG'),
-        "finished": int(req.app.x.redis_conn.get(req.app.x.queue_finished_counter_name) or 0),
-        "rpm": int(req.app.x.redis_conn.get(req.app.x.queue_consumers_rpm) or 0),
+        "pending": sum(pending.values()),
+        "finished": sum(finished.values()),
+        "rpm": sum(rpm.values()),
+        "details": {
+            "pending": pending,
+            "finished": finished,
+            "rpm": rpm
+        },
         "node_name": socket.gethostname(),
     }
 
@@ -180,7 +199,7 @@ async def batch_enqueue(spider_name: str, req: Request, res: Response):
         }
 
         req.app.x.redis_conn.rpush(
-            req.app.x.queue_backlog_name,
+            req.app.x.queue_backlog_names[spider_name],
             json.dumps(task)
         )
 

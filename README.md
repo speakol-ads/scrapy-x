@@ -34,7 +34,13 @@ X_QUEUE_NAME = 'SCRAPY_X_QUEUE'
 # the queue workers
 # by default it uses the cpu cores count
 # try to adjust it based on your resources & needs
-X_QUEUE_WORKERS_COUNT = os.cpu_count()
+X_QUEUE_WORKERS_COUNT = {
+    "page_debug": 2,
+    "latest_news": 4,
+    "kstream": 10,
+    "trending_news": 10,
+}
+
 
 # the webserver workers count
 # the workers count required from uvicorn to spwan
