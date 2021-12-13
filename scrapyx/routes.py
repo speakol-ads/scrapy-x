@@ -157,7 +157,7 @@ async def schedule(req: Request, res: Response):
             "jobid": result["payload"]["args"]["jobid"],
         }
 
-    return {"status": "error"}
+    return result
 
 
 @router.post('/batch/enqueue/{spider_name}', description="adding the specified spider in `{spider_name}` to the backlog to be executed later on multiple items, P.S: any query param and json post data will be used as spider argument")
