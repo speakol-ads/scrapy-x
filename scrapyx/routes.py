@@ -36,11 +36,7 @@ async def run(spider_name: str, req: Request, res: Response):
             if isinstance(post_data, dict):
                 args = {**args, **post_data}
         except Exception as e:
-            res.status_code = 400
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            pass
 
     args["created_at"] = int(time.time())
     args["jobid"] = str(uuid.uuid4())
@@ -88,11 +84,7 @@ async def enqueue(spider_name: str, req: Request, res: Response):
             if isinstance(post_data, dict):
                 args = {**args, **post_data}
         except Exception as e:
-            res.status_code = 400
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            pass
 
     args["created_at"] = int(time.time())
     args["jobid"] = str(uuid.uuid4())
